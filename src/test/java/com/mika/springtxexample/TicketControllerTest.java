@@ -1,6 +1,7 @@
 package com.mika.springtxexample;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mika.springtxexample.event.EventRepository;
 import com.mika.springtxexample.ticket.Ticket;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
@@ -9,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +44,8 @@ public class TicketControllerTest {
     DataSource ticketDataSource;
     @Autowired @Qualifier("hsql")
     DataSource eventDataSource;
+    @Autowired
+    EventRepository eventRepository;
     JdbcTemplate ticketJdbcTemplate;
     JdbcTemplate eventJdbcTemplate;
 
@@ -73,18 +75,18 @@ public class TicketControllerTest {
         eventJdbcTemplate.execute("delete from events");
     }
 
-    @Ignore("ignored, happy case that would fail because of exception that we are throwing on purpose")
     @Test
     public void bookTicket() {
+        eventRepository.setFailFlag(false);
         log.info("tickets: {}", readTickets());
         post("/tickets?show=the_greatest_show_on_earth")
                 .then()
                 .log().ifValidationFails()
                 .assertThat()
                 .statusCode(200)
-                .body("id", is("1"))
+                .body("id", is(1))
                 .body("start", new TimeMatcher())
-                .body("start", is("here"));
+                .body("location", is("here"));
         List<Ticket> tickets = readTickets();
         log.info("tickets: {}", tickets);
         assertThat(tickets.size(), is(1));
@@ -93,6 +95,7 @@ public class TicketControllerTest {
 
     @Test
     public void rollbackWhenSecondInsertFails() {
+        eventRepository.setFailFlag(true);
         log.info("tickets: {}", readTickets());
         post("/tickets?show=the_greatest_show_on_earth")
                 .then()

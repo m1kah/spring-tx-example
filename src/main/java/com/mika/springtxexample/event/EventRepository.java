@@ -48,4 +48,8 @@ public class EventRepository {
                 .setName(rs.getString("name"))
                 .setOccurred(rs.getTimestamp("occurred").toLocalDateTime());
     }
+
+    public void setFailFlag(boolean failFlag) {
+        this.failFlag = failFlag;
+    }
 }
